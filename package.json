@@ -1,0 +1,20 @@
+{
+  "name": "discord-music-bot",
+  "version": "1.0.0",
+  "description": "A powerful Discord music bot with a persistent web dashboard and a dedicated setup channel for easy control.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@discord-player/extractor": "^6.0.2",
+    "@discordjs/voice": "^0.17.0",
+    "discord-player": "^7.0.0",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "ffmpeg-static": "^5.2.0",
+    "libsodium-wrappers": "^0.7.15"
+  }
+}
