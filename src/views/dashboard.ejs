@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocard Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        .card { background-color: #1e293b; border: 1px solid #334155; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-500"><i class="fas fa-compact-disc mr-2"></i>Vocard</h1>
+            <div class="flex items-center">
+                <img src="<%= user.avatarUrl %>" class="w-10 h-10 rounded-full mr-3 border-2 border-blue-500">
+                <span class="font-medium"><%= user.username %></span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Now Playing -->
+            <div class="md:col-span-2 card rounded-xl p-6 shadow-xl">
+                <h2 class="text-xl font-semibold mb-4 text-slate-400">Now Playing</h2>
+                <div id="track-info" class="flex flex-col items-center">
+                    <img id="track-thumb" src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500" class="w-full h-48 object-cover rounded-lg mb-4 shadow-lg">
+                    <div class="text-center">
+                        <h3 id="track-title" class="text-2xl font-bold truncate w-64">Nothing playing</h3>
+                        <p id="track-author" class="text-slate-400">---</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-center space-x-6">
+                    <button onclick="control('prev')" class="text-2xl hover:text-blue-500 transition"><i class="fas fa-backward-step"></i></button>
+                    <button onclick="control('play_pause')" class="text-4xl hover:text-blue-500 transition"><i id="play-icon" class="fas fa-play"></i></button>
+                    <button onclick="control('skip')" class="text-2xl hover:text-blue-500 transition"><i class="fas fa-forward-step"></i></button>
+                    <button onclick="control('stop')" class="text-2xl hover:text-red-500 transition"><i class="fas fa-stop"></i></button>
+                </div>
+
+                <div class="mt-6">
+                    <div class="flex justify-between text-sm text-slate-400 mb-1">
+                        <span>Volume</span>
+                        <span id="volume-val">100%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="100" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" onchange="control('volume', this.value)">
+                </div>
+            </div>
+
+            <!-- Filters & Settings -->
+            <div class="card rounded-xl p-6 shadow-xl">
+                <h2 class="text-xl font-semibold mb-4 text-slate-400">Filters</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="control('filter', 'bassboost')" class="bg-slate-700 hover:bg-blue-600 p-2 rounded text-sm transition">Bassboost</button>
+                    <button onclick="control('filter', 'nightcore')" class="bg-slate-700 hover:bg-blue-600 p-2 rounded text-sm transition">Nightcore</button>
+                    <button onclick="control('filter', 'lofi')" class="bg-slate-700 hover:bg-blue-600 p-2 rounded text-sm transition">Lo-fi</button>
+                    <button onclick="control('filter', 'off')" class="bg-red-900 hover:bg-red-700 p-2 rounded text-sm transition">Clear</button>
+                </div>
+
+                <h2 class="text-xl font-semibold mt-8 mb-4 text-slate-400">Queue</h2>
+                <div id="queue-list" class="space-y-2 max-h-48 overflow-y-auto pr-2">
+                    <p class="text-slate-500 italic">Queue is empty</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function updateStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                if (data.playing) {
+                    document.getElementById('track-title').innerText = data.track.title;
+                    document.getElementById('track-author').innerText = data.track.author;
+                    document.getElementById('track-thumb').src = data.track.thumbnail;
+                    document.getElementById('play-icon').className = data.paused ? 'fas fa-play' : 'fas fa-pause';
+                    document.getElementById('volume-val').innerText = data.volume + '%';
+
+                    const queueList = document.getElementById('queue-list');
+                    if (data.queue && data.queue.length > 0) {
+                        queueList.innerHTML = data.queue.map((t, i) => `
+                            <div class="flex justify-between text-sm bg-slate-800 p-2 rounded">
+                                <span class="truncate w-40">${i+1}. ${t.title}</span>
+                                <span class="text-slate-500">${t.duration}</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        queueList.innerHTML = '<p class="text-slate-500 italic">No more tracks</p>';
+                    }
+                } else {
+                    document.getElementById('track-title').innerText = 'Nothing playing';
+                    document.getElementById('track-author').innerText = '---';
+                    document.getElementById('track-thumb').src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500';
+                    document.getElementById('play-icon').className = 'fas fa-play';
+                }
+            } catch (err) {}
+        }
+
+        async function control(action, value = null) {
+            let url = `/api/control?action=${action}`;
+            if (value !== null) url += `&value=${value}`;
+            await fetch(url);
+            setTimeout(updateStatus, 500);
+        }
+
+        setInterval(updateStatus, 3000);
+        updateStatus();
+    </script>
+</body>
+</html>
