@@ -1,15 +1,14 @@
 const { Events } = require('discord.js');
 const { useMainPlayer } = require('discord-player');
-const { getConfig } = require('../utils/configManager');
+const { getGuild } = require('../utils/database');
 
 module.exports = {
     name: Events.MessageCreate,
     async execute(message) {
-        if (message.author.bot) return;
-        const config = getConfig();
-        const guildConfig = config[message.guildId];
+        if (message.author.bot || !message.guildId) return;
+        const guildData = getGuild(message.guildId);
 
-        if (guildConfig && message.channel.id === guildConfig.setupChannelId) {
+        if (guildData && message.channel.id === guildData.setup_channel_id) {
             if (message.deletable) {
                 setTimeout(() => message.delete().catch(() => {}), 1000);
             }

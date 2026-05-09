@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { setConfig, getConfig } = require('../utils/configManager');
+const { updateGuild } = require('../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -28,9 +28,7 @@ module.exports = {
         );
 
         const message = await channel.send({ embeds: [embed], components: [row1, row2] });
-        const config = getConfig();
-        config[interaction.guildId] = { setupChannelId: channel.id, setupMessageId: message.id };
-        setConfig(config);
+        updateGuild(interaction.guildId, { setup_channel_id: channel.id, setup_message_id: message.id });
         return interaction.editReply(`Successfully setup the music controller in ${channel}!`);
     },
 };

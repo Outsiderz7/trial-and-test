@@ -33,11 +33,22 @@
                     </div>
                 </div>
 
-                <div class="mt-8 flex justify-center space-x-6">
+                <div class="mt-6">
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                        <span id="current-time">0:00</span>
+                        <span id="total-time">0:00</span>
+                    </div>
+                    <input type="range" id="seek-bar" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer" oninput="isSeeking=true" onchange="control('seek', this.value)">
+                </div>
+
+                <div class="mt-6 flex justify-center space-x-6">
+                <div class="mt-6 flex justify-center space-x-4 items-center">
+                    <button onclick="control('repeat')" id="repeat-btn" class="text-lg hover:text-blue-500 transition"><i class="fas fa-repeat"></i></button>
                     <button onclick="control('prev')" class="text-2xl hover:text-blue-500 transition"><i class="fas fa-backward-step"></i></button>
                     <button onclick="control('play_pause')" class="text-4xl hover:text-blue-500 transition"><i id="play-icon" class="fas fa-play"></i></button>
                     <button onclick="control('skip')" class="text-2xl hover:text-blue-500 transition"><i class="fas fa-forward-step"></i></button>
-                    <button onclick="control('stop')" class="text-2xl hover:text-red-500 transition"><i class="fas fa-stop"></i></button>
+                    <button onclick="control('shuffle')" id="shuffle-btn" class="text-lg hover:text-blue-500 transition"><i class="fas fa-shuffle"></i></button>
+                    <button onclick="control('stop')" class="text-xl hover:text-red-500 transition"><i class="fas fa-stop"></i></button>
                 </div>
 
                 <div class="mt-6">
@@ -68,6 +79,8 @@
     </div>
 
     <script>
+        let isSeeking = false;
+
         async function updateStatus() {
             try {
                 const res = await fetch('/api/status');
@@ -80,10 +93,21 @@
                     document.getElementById('play-icon').className = data.paused ? 'fas fa-play' : 'fas fa-pause';
                     document.getElementById('volume-val').innerText = data.volume + '%';
 
+                    if (!isSeeking) {
+                        const seekBar = document.getElementById('seek-bar');
+                        seekBar.max = data.track.durationMS;
+                        seekBar.value = data.track.progressMS;
+                        document.getElementById('current-time').innerText = data.track.progressStr;
+                        document.getElementById('total-time').innerText = data.track.duration;
+                    }
+
+                    document.getElementById('repeat-btn').style.color = data.repeatMode !== 0 ? '#3b82f6' : '#94a3b8';
+                    document.getElementById('shuffle-btn').style.color = data.shuffle ? '#3b82f6' : '#94a3b8';
+
                     const queueList = document.getElementById('queue-list');
                     if (data.queue && data.queue.length > 0) {
                         queueList.innerHTML = data.queue.map((t, i) => `
-                            <div class="flex justify-between text-sm bg-slate-800 p-2 rounded">
+                            <div onclick="control('skipTo', ${i})" class="flex justify-between text-sm bg-slate-800 p-2 rounded hover:bg-slate-700 cursor-pointer transition">
                                 <span class="truncate w-40">${i+1}. ${t.title}</span>
                                 <span class="text-slate-500">${t.duration}</span>
                             </div>
@@ -96,11 +120,15 @@
                     document.getElementById('track-author').innerText = '---';
                     document.getElementById('track-thumb').src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500';
                     document.getElementById('play-icon').className = 'fas fa-play';
+                    document.getElementById('seek-bar').value = 0;
+                    document.getElementById('current-time').innerText = '0:00';
+                    document.getElementById('total-time').innerText = '0:00';
                 }
             } catch (err) {}
         }
 
         async function control(action, value = null) {
+            if (action === 'seek') isSeeking = false;
             let url = `/api/control?action=${action}`;
             if (value !== null) url += `&value=${value}`;
             await fetch(url);

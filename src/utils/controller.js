@@ -1,15 +1,18 @@
 const { EmbedBuilder } = require('discord.js');
-const { getConfig } = require('./configManager');
+const { useQueue } = require('discord-player');
+const { getGuild } = require('./database');
 
 async function updateController(client, guildId) {
-    const config = getConfig();
-    const guildConfig = config[guildId];
-    if (!guildConfig) return;
+    const guildData = getGuild(guildId);
+    if (!guildData || !guildData.setup_channel_id || !guildData.setup_message_id) return;
 
     try {
-        const channel = await client.channels.fetch(guildConfig.setupChannelId);
-        const message = await channel.messages.fetch(guildConfig.setupMessageId);
-        const queue = client.player.nodes.get(guildId);
+        const channel = await client.channels.fetch(guildData.setup_channel_id).catch(() => null);
+        if (!channel) return;
+        const message = await channel.messages.fetch(guildData.setup_message_id).catch(() => null);
+        if (!message) return;
+
+        const queue = useQueue(guildId);
 
         const embed = new EmbedBuilder().setColor('#0099ff');
         if (!queue || !queue.isPlaying()) {
